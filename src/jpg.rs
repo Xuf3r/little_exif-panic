@@ -115,7 +115,7 @@ clear_metadata
 				is_first_iter = false;
 				byte_buffer[0] = byte.clone()
 			},
-			false => if let Some(byte) = full_file_buf.iter().nth(global_advance_new_file_state).next() {
+			false => if let Some(byte) = iterator_file.nth(global_advance_new_file_state+1) {
 				byte_buffer[0] = byte.clone()
 			}
 		}
