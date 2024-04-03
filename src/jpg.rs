@@ -110,12 +110,12 @@ clear_metadata
 		// Read next byte into buffer
 		// perform_file_action!(file.read(&mut byte_buffer));
 		let mut iterator_file = full_file_buf.iter();
-		match is_first_iter {
-			true => if let Some(byte) = iterator_file.next() {
+		match previous_byte_was_marker_prefix {
+			false => if let Some(byte) = iterator_file.next() {
 				is_first_iter = false;
 				byte_buffer[0] = byte.clone()
 			},
-			false => if let Some(byte) = iterator_file.nth(global_advance_new_file_state+1) {
+			true => if let Some(byte) = iterator_file.nth(global_advance_new_file_state+1) {
 				byte_buffer[0] = byte.clone()
 			}
 		}
