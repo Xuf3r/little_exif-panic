@@ -90,7 +90,7 @@ clear_metadata
 		return Err(file_result.err().unwrap());
 	}
 
-	let mut full_file_buf = Vec::new();
+	let mut full_file_buf:Vec<u8> = Vec::new();
 	// Setup of variables necessary for going through the file
 	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
 
@@ -151,9 +151,9 @@ clear_metadata
 					// let mut buffer = Vec::new();// we don't need it
 					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
 
-					let mut buffer = iterator_file.cloned().collect(); // here we just copy the data
+					let (_, buffer) = full_file_buf.split_at_mut((remaining_length - 1) as usize);   // here we just copy the data
 
-
+					let buffer: Vec<u8> = buffer.to_vec();
 					// ...compute the new file length while we are at it...
 					// let new_file_length = (seek_counter-1) + buffer.len() as u64; // not used during in-memory
 
@@ -162,13 +162,13 @@ clear_metadata
 					// We need to overwrite this byte as well - however, it was 
 					// read in the *previous* iteration, not this one
 					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); //yuck
-					iterator_file.nth((seek_counter - 1) as usize); // this walks to the position
+					// iterator_file.nth((seek_counter - 1) as usize); // this has no purpose since it doesn't work like that for iters
 
 
 					// ...and overwrite it using the data from the buffer
 					// perform_file_action!(file.write_all(&buffer)); // yuck
-
-					full_file_buf = buffer;
+				//	full_file_buf.splice((seek_counter - 1).., buffer.iter().cloned());
+					full_file_buf[((seek_counter as usize)- 1)..][..buffer.len()].copy_from_slice(&buffer);
 
 					// Seek back to where we started (-1 for same reason as above) 
 					// and decrement the seek_counter by 2 (= length of marker)
