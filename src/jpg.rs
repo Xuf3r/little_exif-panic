@@ -90,18 +90,35 @@ clear_metadata
 		return Err(file_result.err().unwrap());
 	}
 
+	let mut full_file_buf = Vec::new();
 	// Setup of variables necessary for going through the file
 	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
+
+	file.read_to_end(&mut full_file_buf)?; // Here we load the file into memory instead
+
 	let mut seek_counter = 2u64;                                                // A counter for keeping track of where in the file we currently are
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 	let mut cleared_segments: u8 = 0;                                           // A counter for keeping track of how many segements were cleared
 
+	let mut is_first_iter= true;
+	let mut global_advance_new_file_state= 0;
+	// let mut iterator_file = full_file_buf.iter(); // we instantiate the iterator outside the loop scope
+	// to walk it with next() easily
 	loop
 	{
 		// Read next byte into buffer
-		perform_file_action!(file.read(&mut byte_buffer));
-
+		// perform_file_action!(file.read(&mut byte_buffer));
+		let mut iterator_file = full_file_buf.iter();
+		match is_first_iter {
+			true => if let Some(byte) = iterator_file.next() {
+				is_first_iter = false;
+				byte_buffer[0] = byte.clone()
+			},
+			false => if let Some(byte) = full_file_buf.iter().nth(global_advance_new_file_state).next() {
+				byte_buffer[0] = byte.clone()
+			}
+		}
 		if previous_byte_was_marker_prefix
 		{
 			match byte_buffer[0]
@@ -111,18 +128,31 @@ clear_metadata
 					// Read in the length of the segment
 					// (which follows immediately after the marker)
 					let mut length_buffer = [0u8; 2];
-					perform_file_action!(file.read(&mut length_buffer));
+
+					// perform_file_action!(file.read(&mut length_buffer));  awful syscall.
+					if let (Some(&byte1), Some(&byte2)) = (iterator_file.next(), iterator_file.next()) {
+						length_buffer = [byte1, byte2];
+					}
 
 					// Decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big); // this is a nice macro, don't touch it.
 					let remaining_length = length - 2;
 
 					// Get to the next section
-					perform_file_action!(file.seek(SeekFrom::Current(remaining_length as i64)));
+					// perform_file_action!(file.seek(SeekFrom::Current(remaining_length as i64))); // yuck.
+
+					if remaining_length > 0 {
+						iterator_file.nth((remaining_length - 1) as usize); // what if it's not? surely it is
+					}
+
+
 
 					// ...copy data from there onwards into a buffer...
 					let mut buffer = Vec::new();
-					perform_file_action!(file.read_to_end(&mut buffer));
+					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
+
+					let buffer = iterator_file.cloned().collect(); // here we just copy the data
+
 
 					// ...compute the new file length while we are at it...
 					let new_file_length = (seek_counter-1) + buffer.len() as u64;
@@ -131,21 +161,27 @@ clear_metadata
 					// Note on why -1: This has to do with "previous_byte_was_marker_prefix"
 					// We need to overwrite this byte as well - however, it was 
 					// read in the *previous* iteration, not this one
-					perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1)));
+					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); //yuck
+					iterator_file.nth(seek_counter-1); // this walks to the position
+
 
 					// ...and overwrite it using the data from the buffer
-					perform_file_action!(file.write_all(&buffer));
+					// perform_file_action!(file.write_all(&buffer)); // yuck
+
+					full_file_buf = buffer;
 
 					// Seek back to where we started (-1 for same reason as above) 
 					// and decrement the seek_counter by 2 (= length of marker)
 					// as it will be incremented at the end of the loop again
-					perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1)));
+					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); // yuck
+
+					global_advance_new_file_state = seek_counter-1; // this does work
 					seek_counter -= 2;
 					cleared_segments += 1;
 
 					// Update the size of the file - otherwise there will be
 					// duplicate bytes at the end!
-					perform_file_action!(file.set_len(new_file_length));
+					// perform_file_action!(file.set_len(new_file_length)); // we don't need it for vectors
 				},
 				0xd9	=> break,                                               // EOI marker
 				_		=> (),                                                  // Every other marker
@@ -161,6 +197,7 @@ clear_metadata
 		seek_counter += 1;
 
 	}
+
 
 	return Ok(cleared_segments);
 }
