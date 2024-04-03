@@ -197,6 +197,7 @@ clear_metadata
 		seek_counter += 1;
 
 	}
+	file.write(&*full_file_buf);
 
 
 	return Ok(cleared_segments);
