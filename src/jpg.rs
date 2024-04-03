@@ -155,14 +155,14 @@ clear_metadata
 
 
 					// ...compute the new file length while we are at it...
-					let new_file_length = (seek_counter-1) + buffer.len() as u64;
+					// let new_file_length = (seek_counter-1) + buffer.len() as u64; // not used during in-memory
 
 					// ...go back to the chunk to be removed...
 					// Note on why -1: This has to do with "previous_byte_was_marker_prefix"
 					// We need to overwrite this byte as well - however, it was 
 					// read in the *previous* iteration, not this one
 					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); //yuck
-					iterator_file.nth(seek_counter-1); // this walks to the position
+					iterator_file.nth((seek_counter - 1) as usize); // this walks to the position
 
 
 					// ...and overwrite it using the data from the buffer
@@ -175,7 +175,7 @@ clear_metadata
 					// as it will be incremented at the end of the loop again
 					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); // yuck
 
-					global_advance_new_file_state = seek_counter-1; // this does work
+					global_advance_new_file_state = (seek_counter - 1) as usize; // this does work
 					seek_counter -= 2;
 					cleared_segments += 1;
 
