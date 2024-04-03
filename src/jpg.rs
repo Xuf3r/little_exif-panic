@@ -120,6 +120,7 @@ clear_metadata
 		}
 		if previous_byte_was_marker_prefix
 		{
+			println!("{:?}", &byte_buffer[0]);
 			match byte_buffer[0]
 			{
 				0xe1	=> {                                                    // APP1 marker
