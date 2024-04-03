@@ -153,7 +153,7 @@ clear_metadata
 					// ...copy data from there onwards into a buffer...
 					// let mut buffer = Vec::new();// we don't need it
 					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
-
+					let mut full_file_buf = full_file_buf.clone();
 					let (_, buffer) = full_file_buf.split_at_mut((remaining_length - 1) as usize);   // here we just copy the data
 
 					let buffer: Vec<u8> = buffer.to_vec();
