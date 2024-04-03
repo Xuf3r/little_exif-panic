@@ -148,10 +148,10 @@ clear_metadata
 
 
 					// ...copy data from there onwards into a buffer...
-					let mut buffer = Vec::new();
+					// let mut buffer = Vec::new();// we don't need it
 					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
 
-					let buffer = iterator_file.cloned().collect(); // here we just copy the data
+					let mut buffer = iterator_file.cloned().collect(); // here we just copy the data
 
 
 					// ...compute the new file length while we are at it...
