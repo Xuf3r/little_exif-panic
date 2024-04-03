@@ -110,9 +110,8 @@ clear_metadata
 		// Read next byte into buffer
 		// perform_file_action!(file.read(&mut byte_buffer));
 		let mut iterator_file = full_file_buf.iter();
-		match previous_byte_was_marker_prefix {
+		match is_first_iter {
 			false => if let Some(byte) = iterator_file.next() {
-				is_first_iter = false;
 				byte_buffer[0] = byte.clone()
 			},
 			true => if let Some(byte) = iterator_file.nth(global_advance_new_file_state+1) {
@@ -182,6 +181,7 @@ clear_metadata
 					// Update the size of the file - otherwise there will be
 					// duplicate bytes at the end!
 					// perform_file_action!(file.set_len(new_file_length)); // we don't need it for vectors
+                    is_first_iter = false;
 				},
 				0xd9	=> break,                                               // EOI marker
 				_		=> (),                                                  // Every other marker
