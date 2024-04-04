@@ -102,25 +102,16 @@ clear_metadata
 	let mut cleared_segments: u8 = 0;                                           // A counter for keeping track of how many segements were cleared
 
 	let mut is_first_iter= true;
-	let mut global_advance_new_file_state= 0;
 	let mut iterator_file = full_file_buf.iter(); // we instantiate the iterator outside the loop scope
-	// to walk it with next() easily
+
 	loop
 	{
 		// Read next byte into buffer
 		// perform_file_action!(file.read(&mut byte_buffer));
 
-		match is_first_iter {
-			true => if let Some(byte) = iterator_file.next() {
+		if let Some(byte) = iterator_file.next() {
 				byte_buffer[0] = byte.clone()
-			},
-			false => {
-				let mut iterator_file = full_file_buf.iter();
-				if let Some(byte) = iterator_file.nth(global_advance_new_file_state+1) {
-					byte_buffer[0] = byte.clone()
-				}
 			}
-		}
 		if previous_byte_was_marker_prefix
 		{
 			println!("{:?}", &byte_buffer[0]);
@@ -153,8 +144,8 @@ clear_metadata
 					// ...copy data from there onwards into a buffer...
 					// let mut buffer = Vec::new();// we don't need it
 					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
-					let mut full_file_buf = full_file_buf.clone();
-					let (_, buffer) = full_file_buf.split_at_mut((remaining_length - 1) as usize);   // here we just copy the data
+					let mut full_temp = full_file_buf.clone();
+					let (_, buffer) = full_temp.split_at_mut((remaining_length - 1) as usize);   // here we just copy the data
 
 					let buffer: Vec<u8> = buffer.to_vec();
 					// ...compute the new file length while we are at it...
@@ -173,12 +164,18 @@ clear_metadata
 				//	full_file_buf.splice((seek_counter - 1).., buffer.iter().cloned());
 					full_file_buf[((seek_counter as usize)- 1)..][..buffer.len()].copy_from_slice(&buffer);
 
+
+
 					// Seek back to where we started (-1 for same reason as above) 
 					// and decrement the seek_counter by 2 (= length of marker)
 					// as it will be incremented at the end of the loop again
 					//perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1))); // yuck
 
-					global_advance_new_file_state = (seek_counter - 1) as usize; // this does work
+
+					iterator_file = full_file_buf.iter(); //WE UPDATE THE ITERATOR HERE TO REPRESENT THE NEW ITER
+					iterator_file.nth((seek_counter - 1) as usize); // AND WE JUST FUCKING WALK IT INSIDE THE BODY SO WE CAN
+															// MERRILY NEXT() WALK IT BYTE BY BYTE OUTSIDE
+
 					seek_counter -= 2;
 					cleared_segments += 1;
 
