@@ -145,7 +145,7 @@ clear_metadata
 					// let mut buffer = Vec::new();// we don't need it
 					//perform_file_action!(file.read_to_end(&mut buffer)); // yuck
 					let mut full_temp = full_file_buf.clone();
-					let (_, buffer) = full_temp.split_at_mut((remaining_length - 1) as usize);   // here we just copy the data
+					let (_, buffer) = full_temp.split_at_mut((seek_counter +remaining_length - 1) as usize);   // here we just copy the data
 
 					let buffer: Vec<u8> = buffer.to_vec();
 					// ...compute the new file length while we are at it...
@@ -182,7 +182,6 @@ clear_metadata
 					// Update the size of the file - otherwise there will be
 					// duplicate bytes at the end!
 					// perform_file_action!(file.set_len(new_file_length)); // we don't need it for vectors
-                    is_first_iter = false;
 				},
 				0xd9	=> break,                                               // EOI marker
 				_		=> (),                                                  // Every other marker
