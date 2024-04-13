@@ -122,18 +122,17 @@ clear_metadata
 					// (which follows immediately after the marker)
 					let mut length_buffer = [0u8; 2];
 
-					// perform_file_action!(file.read(&mut length_buffer));  awful syscall.
 					if let (Some(&byte1), Some(&byte2)) = (iterator_file.next(), iterator_file.next()) {
 						length_buffer = [byte1, byte2];
 					}
 
 					// Decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big); // this is a nice macro, don't touch it.
+					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
 					let remaining_length = length - 2;
 
 
 					if remaining_length > 0 {
-						iterator_file.nth((remaining_length - 1) as usize); // what if it's not? surely it is
+						iterator_file.nth((remaining_length - 1) as usize); // What if it's not? surely it is
 					} else {
 						unreachable!("If rem_len is <= 0 then it's not a valid JPEG\
 						 - it must have at least a single SOS after APP1")
