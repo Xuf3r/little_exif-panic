@@ -134,12 +134,15 @@ clear_metadata
 
 					if remaining_length > 0 {
 						iterator_file.nth((remaining_length - 1) as usize); // what if it's not? surely it is
+					} else {
+						unreachable!("If rem_len is <= 0 then it's not a valid JPEG\
+						 - it must have at least a single SOS after APP1")
 					}
 
 
 					// ...copy data from there onwards into a buffer...
 					let mut full_temp = full_file_buf.clone();
-					let (_, buffer) = full_temp.split_at_mut(((seek_counter as usize) + (remaining_length as usize ) - 1) as usize);   // here we just copy the data
+					let (_, buffer) = full_temp.split_at_mut((seek_counter as usize) + (remaining_length as usize ) - 1);   // here we just copy the data
 
 					let buffer: Vec<u8> = buffer.to_vec();
 
@@ -147,9 +150,9 @@ clear_metadata
 					full_file_buf[((seek_counter as usize)- 1)..][..buffer.len()].copy_from_slice(&buffer);
 
 
-					iterator_file = full_file_buf.iter(); //WE UPDATE THE ITERATOR HERE TO REPRESENT THE NEW ITER
-					iterator_file.nth((seek_counter - 1) as usize); // AND WE JUST WALK IT INSIDE THE BODY SO WE CAN
-															// MERRILY NEXT() WALK IT BYTE BY BYTE OUTSIDE
+					iterator_file = full_file_buf.iter(); // Here we reassign the iterator to represent the mutated bytestream
+					iterator_file.nth((seek_counter - 1) as usize); // We walk to the previous position immediately
+															// This allows to simply next()-walk bytes outside.
 
 					seek_counter -= 2;
 					cleared_segments += 1;
@@ -170,6 +173,7 @@ clear_metadata
 
 	}
 	// check if we can save the file
+	// probably possible to optimize further by returning the purged bytestream itself
 	if let Err(_) = file.write(&*full_file_buf) {
 		return io_error!(Other, "Couldn't save JPEG file!");
 	}
